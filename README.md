@@ -27,15 +27,16 @@ python app.py
 Ouvrir le navigateur à l'adresse : **http://localhost:5000**
 
 ### Configuration MySQL
-Dans `app.py`, modifier les paramètres de connexion si nécessaire :
-```python
-DB_CONFIG = {
-    'host':     'localhost',
-    'user':     'agent',          # utilisateur créé par le LCD
-    'password': 'Agent@2025!',
-    'database': 'agence_voyage',
-}
-```
+L'application utilise une connexion dynamique basée sur les rôles de sécurité MySQL (LCD). Les connexions sont configurées directement dans la fonction `get_db()` de `app.py` :
+
+- **Rôle Agent** (Gestion des clients et réservations) : 
+  - Utilisateur : `agent`
+  - Mot de passe : `Agent@2025!`
+- **Rôle Comptable** (Gestion et historique des paiements) : 
+  - Utilisateur : `comptable`
+  - Mot de passe : `Compta@2025!`
+
+Assurez-vous que ces deux utilisateurs ont bien été créés dans votre instance MySQL locale et possèdent les privilèges nécessaires sur la base `agence_voyage`.
 
 ### Fonctionnalités implémentées
 1. **Catalogue des circuits** — liste tous les circuits avec départs disponibles et places restantes
