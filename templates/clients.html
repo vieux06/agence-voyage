@@ -27,7 +27,7 @@
             {% for c in clients %}
             <tr>
                 <td>#{{ c.num_client }}</td>
-                <td style="font-weight:500;">{{ c.prenom }} {{ c.nom }}</td>
+                <td style="font-weight:500;">{{ c.prenom_client }} {{ c.nom_client }}</td>
                 <td><span class="badge badge-info">{{ c.nationalite }}</span></td>
                 <td style="color:var(--muted);font-size:0.8rem;">{{ c.email }}</td>
                 <td style="color:var(--muted);font-size:0.8rem;">{{ c.telephone }}</td>

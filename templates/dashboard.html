@@ -113,7 +113,7 @@
             {% for r in impayes %}
             <tr>
                 <td>#{{ r.id_reservation }}</td>
-                <td>{{ r.prenom }} {{ r.nom }}</td>
+                <td>{{ r.prenom_client }} {{ r.nom_client }}</td>
                 <td>{{ "{:,.0f}".format(r.montant_total) }} FCFA</td>
                 <td class="text-muted">{{ "{:,.0f}".format(r.total_paye) }} FCFA</td>
                 <td style="color:var(--danger);font-weight:600;">{{ "{:,.0f}".format(r.solde) }} FCFA</td>

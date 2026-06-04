@@ -19,7 +19,7 @@
             {% for p in paiements %}
             <tr>
                 <td>#{{ p.id_paiement }}</td>
-                <td>{{ p.prenom }} {{ p.nom }}</td>
+                <td>{{ p.prenom_client }} {{ p.nom_client }}</td>
                 <td style="color:var(--muted);font-size:0.8rem;">{{ p.circuit }}</td>
                 <td style="color:var(--success);font-weight:600;">{{ "{:,.0f}".format(p.montant) }} FCFA</td>
                 <td>

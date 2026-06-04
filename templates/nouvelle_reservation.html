@@ -30,7 +30,7 @@
                 <select name="num_client" required>
                     <option value="">— Choisir un client —</option>
                     {% for c in clients %}
-                    <option value="{{ c.num_client }}">{{ c.prenom }} {{ c.nom }} — {{ c.email }}</option>
+                    <option value="{{ c.num_client }}">{{ c.prenom_client }} {{ c.nom_client }} — {{ c.email }}</option>
                     {% endfor %}
                 </select>
                 <small style="color:var(--muted);font-size:0.75rem;">Client absent ? <a href="{{ url_for('nouveau_client') }}" style="color:var(--gold);">Ajouter un client</a></small>
@@ -41,7 +41,7 @@
                 <select name="num_guide" required>
                     <option value="">— Choisir un guide —</option>
                     {% for g in guides %}
-                    <option value="{{ g.num_guide }}">{{ g.prenom }} {{ g.nom }} ({{ g.langues_parlees }})</option>
+                    <option value="{{ g.num_guide }}">{{ g.prenom_guide }} {{ g.nom_guide }} ({{ g.langues_parlees }})</option>
                     {% endfor %}
                 </select>
             </div>

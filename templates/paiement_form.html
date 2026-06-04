@@ -22,7 +22,7 @@
                         {% for r in reservations %}
                         <option value="{{ r.id_reservation }}"
                             {% if id_reservation and id_reservation|string == r.id_reservation|string %}selected{% endif %}>
-                            #{{ r.id_reservation }} — {{ r.prenom }} {{ r.nom }} (solde : {{ "{:,.0f}".format(r.solde) }} FCFA)
+                            #{{ r.id_reservation }} — {{ r.prenom_client }} {{ r.nom_client }} (solde : {{ "{:,.0f}".format(r.solde) }} FCFA)
                         </option>
                         {% endfor %}
                     </select>
@@ -52,14 +52,14 @@
         </form>
     </div>
 
-    <!-- Liste des réservations impayées -->
+    
     <div class="card">
         <div class="card-title">⚠️ Réservations avec solde impayé</div>
         {% if reservations %}
         {% for r in reservations %}
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
             <div>
-                <div style="font-size:0.875rem;font-weight:500;">#{{ r.id_reservation }} — {{ r.prenom }} {{ r.nom }}</div>
+                <div style="font-size:0.875rem;font-weight:500;">#{{ r.id_reservation }} — {{ r.prenom_client }} {{ r.nom_client }}</div>
                 <div style="font-size:0.75rem;color:var(--muted);">Total : {{ "{:,.0f}".format(r.montant_total) }} FCFA · Payé : {{ "{:,.0f}".format(r.total_paye) }} FCFA</div>
             </div>
             <span style="color:var(--danger);font-weight:600;font-size:0.875rem;">{{ "{:,.0f}".format(r.solde) }} FCFA</span>

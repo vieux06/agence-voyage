@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Fiche client — {{ client.prenom }} {{ client.nom }}{% endblock %}
+{% block title %}Fiche client — {{ client.prenom_client }} {{ client.nom_client }}{% endblock %}
 {% block content %}
 <div class="page-header">
     <div>
-        <h2>{{ client.prenom }} {{ client.nom }}</h2>
+        <h2>{{ client.prenom_client }} {{ client.nom_client }}</h2>
         <p>Fiche client complète · {{ client.nationalite }}</p>
     </div>
     <a href="{{ url_for('clients') }}" class="btn btn-ghost">← Retour</a>

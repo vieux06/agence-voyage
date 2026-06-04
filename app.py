@@ -78,9 +78,9 @@ def dashboard():
     """)
     taux_remplissage = cur.fetchall()
 
-    # Réservations avec solde impayé
+    # Réservations avec solde impayé (Mise à jour v7: nom_client, prenom_client)
     cur.execute("""
-        SELECT r.id_reservation, cl.nom, cl.prenom,
+        SELECT r.id_reservation, cl.nom_client, cl.prenom_client,
                (r.nb_personnes * c.prix_par_personne) AS montant_total,
                COALESCE(SUM(p.montant), 0) AS total_paye,
                (r.nb_personnes * c.prix_par_personne) - COALESCE(SUM(p.montant), 0) AS solde
@@ -90,7 +90,7 @@ def dashboard():
         JOIN Circuit c ON c.code_circuit = dep.code_circuit
         LEFT JOIN Paiement p ON p.id_reservation = r.id_reservation
         WHERE r.statut_reservation != 'annulee'
-        GROUP BY r.id_reservation, cl.nom, cl.prenom, montant_total
+        GROUP BY r.id_reservation, cl.nom_client, cl.prenom_client, montant_total
         HAVING solde > 0
         ORDER BY solde DESC
     """)
@@ -184,11 +184,13 @@ def departs_circuit(code):
 def reservations():
     conn = get_db('agent')
     cur = conn.cursor(dictionary=True)
+    
+    # Mise à jour v7: nom_client, prenom_client, nom_guide, prenom_guide
     cur.execute("""
         SELECT r.id_reservation, r.nb_personnes, r.statut_reservation, r.date_reservation,
-               cl.nom, cl.prenom, cl.email,
+               cl.nom_client, cl.prenom_client, cl.email,
                c.libelle AS circuit, dep.date_depart,
-               g.nom AS guide_nom, g.prenom AS guide_prenom,
+               g.nom_guide, g.prenom_guide,
                (r.nb_personnes * c.prix_par_personne) AS montant_total,
                COALESCE(SUM(p.montant), 0) AS total_paye
         FROM Reservation r
@@ -217,9 +219,8 @@ def nouvelle_reservation():
         num_guide    = request.form.get('num_guide')
         nb_personnes = int(request.form.get('nb_personnes', 1))
 
-        # Vérification des places disponibles (règle de gestion)
-        cur.execute("SELECT nb_places_restantes, statut_depart FROM Depart WHERE id_depart = %s",
-                    (id_depart,))
+        # Vérification préliminaire des places disponibles
+        cur.execute("SELECT nb_places_restantes, statut_depart FROM Depart WHERE id_depart = %s", (id_depart,))
         depart = cur.fetchone()
 
         if not depart:
@@ -229,7 +230,7 @@ def nouvelle_reservation():
         elif nb_personnes > depart['nb_places_restantes']:
             flash(f"Pas assez de places. Il reste {depart['nb_places_restantes']} place(s).", "danger")
         else:
-            # Calcul de l'acompte (30%)
+            # Calcul prévisionnel de l'acompte (30%)
             cur.execute("""
                 SELECT c.prix_par_personne
                 FROM Depart d JOIN Circuit c ON c.code_circuit = d.code_circuit
@@ -238,22 +239,25 @@ def nouvelle_reservation():
             prix = cur.fetchone()['prix_par_personne']
             acompte = round(float(prix) * nb_personnes * 0.30, 2)
 
-            # Insertion de la réservation
-            # Les triggers du LDD gèrent de façon transparente les vérifications et décomptes
-            cur.execute("""
-                INSERT INTO Reservation (nb_personnes, statut_reservation, date_reservation,
-                                         num_client, id_depart, num_guide)
-                VALUES (%s, 'confirmee', %s, %s, %s, %s)
-            """, (nb_personnes, date.today(), num_client, id_depart, num_guide))
+            # Insertion sécurisée (les triggers v7 lèvent des exceptions si les critères échouent)
+            try:
+                cur.execute("""
+                    INSERT INTO Reservation (nb_personnes, statut_reservation, date_reservation,
+                                             num_client, id_depart, num_guide)
+                    VALUES (%s, 'confirmee', %s, %s, %s, %s)
+                """, (nb_personnes, date.today(), num_client, id_depart, num_guide))
 
-            id_resa = cur.lastrowid
-            conn.commit()
-            flash(f"Réservation #{id_resa} créée ! Acompte à verser : {acompte:,.0f} FCFA (30%)", "success")
-            cur.close()
-            conn.close()
-            return redirect(url_for('paiement_form', id_reservation=id_resa, acompte=acompte))
+                id_resa = cur.lastrowid
+                conn.commit()
+                flash(f"Réservation #{id_resa} créée ! Acompte à verser : {acompte:,.0f} FCFA (30%)", "success")
+                cur.close()
+                conn.close()
+                return redirect(url_for('paiement_form', id_reservation=id_resa, acompte=acompte))
+            except Error as e:
+                conn.rollback()
+                flash(f"Erreur d'insertion (Trigger) : {e.msg if hasattr(e, 'msg') else e}", "danger")
 
-    # GET : charger les listes pour le formulaire
+    # GET : charger les listes pour le formulaire (Mise à jour v7: nom_client, prenom_client, nom_guide, prenom_guide)
     cur.execute("""
         SELECT d.id_depart, d.date_depart, d.nb_places_restantes,
                c.libelle, c.prix_par_personne, dest.ville
@@ -265,10 +269,10 @@ def nouvelle_reservation():
     """)
     departs = cur.fetchall()
 
-    cur.execute("SELECT num_client, nom, prenom, email FROM Client ORDER BY nom")
+    cur.execute("SELECT num_client, nom_client, prenom_client, email FROM Client ORDER BY nom_client")
     clients = cur.fetchall()
 
-    cur.execute("SELECT num_guide, nom, prenom, langues_parlees FROM Guide ORDER BY nom")
+    cur.execute("SELECT num_guide, nom_guide, prenom_guide, langues_parlees FROM Guide ORDER BY nom_guide")
     guides = cur.fetchall()
 
     cur.close()
@@ -281,7 +285,6 @@ def annuler_reservation(id_reservation):
     conn = get_db('agent')
     cur = conn.cursor(dictionary=True)
 
-    # Récupérer les informations de la réservation
     cur.execute("""
         SELECT r.nb_personnes, r.id_depart, r.statut_reservation
         FROM Reservation r WHERE r.id_reservation = %s
@@ -291,24 +294,21 @@ def annuler_reservation(id_reservation):
     if not resa:
         flash("Réservation introuvable.", "danger")
     elif resa['statut_reservation'] == 'annulee':
-        flash("Cette réservation est déjà annulée.", "warning")
+        flash("Cette réservation est déjà appelée annulée.", "warning")
     else:
-        # Annuler la réservation logiquement (Autorisé pour l'agent)
-        cur.execute("""
-            UPDATE Reservation SET statut_reservation = 'annulee'
-            WHERE id_reservation = %s
-        """, (id_reservation,))
+        try:
+            # L'annulation logique va réveiller le trigger `trg_annulation_reservation` 
+            # qui va recréditer automatiquement la table Depart ! Plus besoin de le faire en Python.
+            cur.execute("""
+                UPDATE Reservation SET statut_reservation = 'annulee'
+                WHERE id_reservation = %s
+            """, (id_reservation,))
 
-        # Restituer proprement les places sans conflit séquentiel
-        cur.execute("""
-            UPDATE Depart
-            SET nb_places_restantes = nb_places_restantes + %s,
-                statut_depart = 'ouvert'
-            WHERE id_depart = %s
-        """, (resa['nb_personnes'], resa['id_depart']))
-
-        conn.commit()
-        flash(f"Réservation #{id_reservation} annulée. {resa['nb_personnes']} place(s) restituée(s).", "success")
+            conn.commit()
+            flash(f"Réservation #{id_reservation} annulée avec succès via SGBD.", "success")
+        except Error as e:
+            conn.rollback()
+            flash(f"Erreur lors de l'annulation : {e}", "danger")
 
     cur.close()
     conn.close()
@@ -320,12 +320,13 @@ def annuler_reservation(id_reservation):
 # ═══════════════════════════════════════════════
 @app.route('/paiements')
 def paiements():
-    # Les paiements globaux peuvent utiliser la vue 'comptable' pour respecter le LCD
     conn = get_db('comptable')
     cur = conn.cursor(dictionary=True)
+    
+    # Mise à jour v7: nom_client, prenom_client
     cur.execute("""
         SELECT p.id_paiement, p.montant, p.date_paiement, p.mode_paiement,
-               r.id_reservation, cl.nom, cl.prenom,
+               r.id_reservation, cl.nom_client, cl.prenom_client,
                c.libelle AS circuit
         FROM Paiement p
         JOIN Reservation r ON r.id_reservation = p.id_reservation
@@ -356,19 +357,24 @@ def paiement_form():
         if montant <= 0:
             flash("Le montant doit être supérieur à 0.", "danger")
         else:
-            cur.execute("""
-                INSERT INTO Paiement (montant, date_paiement, mode_paiement, id_reservation)
-                VALUES (%s, %s, %s, %s)
-            """, (montant, date.today(), mode, id_resa))
-            conn.commit()
-            flash(f"Paiement de {montant:,.0f} FCFA enregistré.", "success")
-            cur.close()
-            conn.close()
-            return redirect(url_for('solde_reservation', id_reservation=id_resa))
+            try:
+                # Intercepté par `trg_acompte_30` si c'est le 1er paiement et que montant < 30%
+                cur.execute("""
+                    INSERT INTO Paiement (montant, date_paiement, mode_paiement, id_reservation)
+                    VALUES (%s, %s, %s, %s)
+                """, (montant, date.today(), mode, id_resa))
+                conn.commit()
+                flash(f"Paiement de {montant:,.0f} FCFA enregistré.", "success")
+                cur.close()
+                conn.close()
+                return redirect(url_for('solde_reservation', id_reservation=id_resa))
+            except Error as e:
+                conn.rollback()
+                flash(f"Refus du paiement (SGBD) : {e.msg if hasattr(e, 'msg') else e}", "danger")
 
-    # Charger les réservations avec solde impayé
+    # Charger les réservations avec solde impayé (Mise à jour v7: nom_client, prenom_client)
     cur.execute("""
-        SELECT r.id_reservation, cl.nom, cl.prenom,
+        SELECT r.id_reservation, cl.nom_client, cl.prenom_client,
                (r.nb_personnes * c.prix_par_personne) AS montant_total,
                COALESCE(SUM(p.montant), 0) AS total_paye,
                (r.nb_personnes * c.prix_par_personne) - COALESCE(SUM(p.montant), 0) AS solde
@@ -378,7 +384,7 @@ def paiement_form():
         JOIN Circuit c ON c.code_circuit = dep.code_circuit
         LEFT JOIN Paiement p ON p.id_reservation = r.id_reservation
         WHERE r.statut_reservation != 'annulee'
-        GROUP BY r.id_reservation, cl.nom, cl.prenom, montant_total
+        GROUP BY r.id_reservation, cl.nom_client, cl.prenom_client, montant_total
         HAVING solde > 0
         ORDER BY r.id_reservation DESC
     """)
@@ -397,11 +403,12 @@ def solde_reservation(id_reservation):
     conn = get_db('agent')
     cur = conn.cursor(dictionary=True)
 
+    # Mise à jour v7: nom_client, prenom_client, nom_guide, prenom_guide
     cur.execute("""
         SELECT r.id_reservation, r.nb_personnes, r.statut_reservation,
-               cl.nom, cl.prenom, cl.email, cl.telephone,
+               cl.nom_client, cl.prenom_client, cl.email, cl.telephone,
                c.libelle AS circuit, c.prix_par_personne,
-               dep.date_depart, g.nom AS guide_nom, g.prenom AS guide_prenom,
+               dep.date_depart, g.nom_guide AS guide_nom, g.prenom_guide AS guide_prenom,
                (r.nb_personnes * c.prix_par_personne) AS montant_total
         FROM Reservation r
         JOIN Client cl ON cl.num_client = r.num_client
@@ -437,15 +444,16 @@ def clients():
     cur = conn.cursor(dictionary=True)
     recherche = request.args.get('q', '')
 
+    # Mise à jour v7: nom_client, prenom_client
     if recherche:
         cur.execute("""
-            SELECT num_client, nom, prenom, nationalite, email, telephone
+            SELECT num_client, nom_client, prenom_client, nationalite, email, telephone
             FROM Client
-            WHERE nom LIKE %s OR prenom LIKE %s OR email LIKE %s
-            ORDER BY nom
+            WHERE nom_client LIKE %s OR prenom_client LIKE %s OR email LIKE %s
+            ORDER BY nom_client
         """, (f'%{recherche}%', f'%{recherche}%', f'%{recherche}%'))
     else:
-        cur.execute("SELECT num_client, nom, prenom, nationalite, email, telephone FROM Client ORDER BY nom")
+        cur.execute("SELECT num_client, nom_client, prenom_client, nationalite, email, telephone FROM Client ORDER BY nom_client")
 
     clients_list = cur.fetchall()
     cur.close()
@@ -468,8 +476,9 @@ def nouveau_client():
             conn = get_db('agent')
             cur  = conn.cursor()
             try:
+                # Mise à jour v7: nom_client, prenom_client
                 cur.execute("""
-                    INSERT INTO Client (nom, prenom, nationalite, email, telephone)
+                    INSERT INTO Client (nom_client, prenom_client, nationalite, email, telephone)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (nom, prenom, nationalite, email, telephone))
                 conn.commit()
