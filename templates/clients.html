@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Clients</h2>
+        <p>{{ clients|length }} client(s) enregistré(s)</p>
+    </div>
+    <a href="{{ url_for('nouveau_client') }}" class="btn btn-primary">👤 Nouveau client</a>
+</div>
+
+<div class="card mb-20">
+    <form method="GET" style="display:flex;gap:12px;align-items:center;">
+        <input type="text" name="q" value="{{ recherche }}" placeholder="🔍 Rechercher par nom, prénom ou email..." style="flex:1;">
+        <button type="submit" class="btn btn-primary">Rechercher</button>
+        {% if recherche %}<a href="{{ url_for('clients') }}" class="btn btn-ghost">✕ Effacer</a>{% endif %}
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>#</th><th>Nom</th><th>Nationalité</th><th>Email</th><th>Téléphone</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+            {% for c in clients %}
+            <tr>
+                <td>#{{ c.num_client }}</td>
+                <td style="font-weight:500;">{{ c.prenom }} {{ c.nom }}</td>
+                <td><span class="badge badge-info">{{ c.nationalite }}</span></td>
+                <td style="color:var(--muted);font-size:0.8rem;">{{ c.email }}</td>
+                <td style="color:var(--muted);font-size:0.8rem;">{{ c.telephone }}</td>
+                <td><a href="{{ url_for('fiche_client', num_client=c.num_client) }}" class="btn btn-ghost btn-sm">👁️ Fiche</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Départs — {{ circuit.libelle }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>{{ circuit.libelle }}</h2>
+        <p>📍 {{ circuit.ville }}, {{ circuit.pays }} · {{ "{:,.0f}".format(circuit.prix_par_personne) }} FCFA/pers.</p>
+    </div>
+    <a href="{{ url_for('circuits') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<div class="card">
+    <div class="card-title">📅 Dates de départ disponibles</div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>#</th><th>Date de départ</th><th>Places restantes</th><th>Statut</th><th>Action</th></tr></thead>
+            <tbody>
+            {% for d in departs %}
+            <tr>
+                <td>#{{ d.id_depart }}</td>
+                <td>{{ d.date_depart.strftime('%d %B %Y') }}</td>
+                <td>
+                    <span style="color:{% if d.nb_places_restantes == 0 %}var(--danger){% elif d.nb_places_restantes <= 3 %}var(--warning){% else %}var(--success){% endif %};font-weight:600;">
+                        {{ d.nb_places_restantes }} place(s)
+                    </span>
+                </td>
+                <td>
+                    {% if d.statut_depart == 'ouvert' %}<span class="badge badge-success">Ouvert</span>
+                    {% elif d.statut_depart == 'complet' %}<span class="badge badge-danger">Complet</span>
+                    {% else %}<span class="badge badge-muted">Annulé</span>{% endif %}
+                </td>
+                <td>
+                    {% if d.statut_depart == 'ouvert' %}
+                    <a href="{{ url_for('nouvelle_reservation') }}?id_depart={{ d.id_depart }}" class="btn btn-primary btn-sm">Réserver</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Fiche client — {{ client.prenom }} {{ client.nom }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>{{ client.prenom }} {{ client.nom }}</h2>
+        <p>Fiche client complète · {{ client.nationalite }}</p>
+    </div>
+    <a href="{{ url_for('clients') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<div class="grid-2 mb-20">
+    <div class="card">
+        <div class="card-title">👤 Informations personnelles</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:0.875rem;">
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Numéro client</span><span>#{{ client.num_client }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Email</span><span>{{ client.email }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Téléphone</span><span>{{ client.telephone }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Nationalité</span>
+                <span class="badge badge-info">{{ client.nationalite }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📊 Résumé</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:0.875rem;">
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Total réservations</span>
+                <span style="font-weight:600;">{{ reservations|length }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Réservations confirmées</span>
+                <span style="color:var(--success);">{{ reservations|selectattr('statut_reservation','equalto','confirmee')|list|length }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Montant total dépensé</span>
+                <span style="color:var(--gold);font-weight:600;">
+                    {{ "{:,.0f}".format(reservations|sum(attribute='total_paye')) }} FCFA
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title">📋 Historique des réservations</div>
+    {% if reservations %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>#</th><th>Circuit</th><th>Date départ</th><th>Personnes</th><th>Montant total</th><th>Payé</th><th>Statut</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td>#{{ r.id_reservation }}</td>
+                <td>{{ r.circuit }}</td>
+                <td>{{ r.date_depart.strftime('%d/%m/%Y') }}</td>
+                <td style="text-align:center;">{{ r.nb_personnes }}</td>
+                <td>{{ "{:,.0f}".format(r.montant_total) }} FCFA</td>
+                <td style="color:{% if r.montant_total - r.total_paye <= 0 %}var(--success){% else %}var(--warning){% endif %};">
+                    {{ "{:,.0f}".format(r.total_paye) }} FCFA
+                </td>
+                <td>
+                    {% if r.statut_reservation == 'confirmee' %}<span class="badge badge-success">Confirmée</span>
+                    {% elif r.statut_reservation == 'en_attente' %}<span class="badge badge-warning">En attente</span>
+                    {% else %}<span class="badge badge-muted">Annulée</span>{% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('solde_reservation', id_reservation=r.id_reservation) }}" class="btn btn-ghost btn-sm">👁️</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Ce client n'a aucune réservation pour le moment.</p>
+    {% endif %}
+</div>
+{% endblock %}

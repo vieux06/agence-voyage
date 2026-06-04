@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Réservations{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Réservations</h2>
+        <p>{{ reservations|length }} réservation(s) au total</p>
+    </div>
+    <a href="{{ url_for('nouvelle_reservation') }}" class="btn btn-primary">➕ Nouvelle réservation</a>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Client</th><th>Circuit</th><th>Date départ</th>
+                    <th>Personnes</th><th>Montant total</th><th>Payé</th><th>Statut</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td>#{{ r.id_reservation }}</td>
+                <td>
+                    <div style="font-weight:500;">{{ r.prenom }} {{ r.nom }}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">{{ r.email }}</div>
+                </td>
+                <td>{{ r.circuit }}</td>
+                <td>{{ r.date_depart.strftime('%d/%m/%Y') }}</td>
+                <td style="text-align:center;">{{ r.nb_personnes }}</td>
+                <td>{{ "{:,.0f}".format(r.montant_total) }} FCFA</td>
+                <td>
+                    {% set solde = r.montant_total - r.total_paye %}
+                    <span style="color:{% if solde <= 0 %}var(--success){% else %}var(--warning){% endif %};">
+                        {{ "{:,.0f}".format(r.total_paye) }} FCFA
+                    </span>
+                </td>
+                <td>
+                    {% if r.statut_reservation == 'confirmee' %}<span class="badge badge-success">Confirmée</span>
+                    {% elif r.statut_reservation == 'en_attente' %}<span class="badge badge-warning">En attente</span>
+                    {% else %}<span class="badge badge-muted">Annulée</span>{% endif %}
+                </td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <a href="{{ url_for('solde_reservation', id_reservation=r.id_reservation) }}" class="btn btn-ghost btn-sm">👁️</a>
+                    {% if r.statut_reservation != 'annulee' %}
+                    <form method="POST" action="{{ url_for('annuler_reservation', id_reservation=r.id_reservation) }}"
+                          onsubmit="return confirm('Annuler la réservation #{{ r.id_reservation }} ?')">
+                        <button type="submit" class="btn btn-danger btn-sm">✕ Annuler</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

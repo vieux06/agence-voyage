@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Tableau de bord — Agence de Voyage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Tableau de bord</h2>
+        <p>Vue d'ensemble de l'agence</p>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="icon">👥</div>
+        <div class="label">Clients enregistrés</div>
+        <div class="value">{{ stats.nb_clients }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="icon">📋</div>
+        <div class="label">Réservations confirmées</div>
+        <div class="value">{{ stats.nb_resa }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="icon">✈️</div>
+        <div class="label">Départs ouverts</div>
+        <div class="value">{{ stats.nb_departs_ouverts }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="icon">💰</div>
+        <div class="label">Chiffre d'affaires total</div>
+        <div class="value" style="font-size:1.4rem;">{{ "{:,.0f}".format(stats.ca_total) }}</div>
+        <div class="text-muted" style="font-size:0.75rem;">FCFA encaissés</div>
+    </div>
+</div>
+
+<div class="grid-2 mb-20">
+    <!-- Départs du mois -->
+    <div class="card">
+        <div class="card-title">✈️ Départs ce mois-ci</div>
+        {% if departs_mois %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Circuit</th>
+                        <th>Destination</th>
+                        <th>Places</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for d in departs_mois %}
+                <tr>
+                    <td>{{ d.date_depart.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ d.circuit }}</td>
+                    <td>{{ d.ville }}</td>
+                    <td>{{ d.nb_places_restantes }}</td>
+                    <td>
+                        {% if d.statut_depart == 'ouvert' %}
+                            <span class="badge badge-success">Ouvert</span>
+                        {% elif d.statut_depart == 'complet' %}
+                            <span class="badge badge-danger">Complet</span>
+                        {% else %}
+                            <span class="badge badge-muted">Annulé</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Aucun départ prévu ce mois-ci.</p>
+        {% endif %}
+    </div>
+
+    <!-- Taux de remplissage -->
+    <div class="card">
+        <div class="card-title">📊 Taux de remplissage</div>
+        {% for t in taux_remplissage %}
+        <div style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:0.8rem;color:var(--text);">{{ t.libelle[:35] }}</span>
+                <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">{{ t.taux }}%</span>
+            </div>
+            <div style="background:var(--border);border-radius:4px;height:6px;">
+                <div style="width: {{ t.taux }}%;background:linear-gradient(90deg,var(--gold),var(--gold-light));height:6px;border-radius:4px;transition:width 0.3s;"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Soldes impayés -->
+<div class="card">
+    <div class="card-title">⚠️ Réservations avec solde impayé</div>
+    {% if impayes %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Client</th>
+                    <th>Montant total</th>
+                    <th>Déjà payé</th>
+                    <th>Solde restant</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in impayes %}
+            <tr>
+                <td>#{{ r.id_reservation }}</td>
+                <td>{{ r.prenom }} {{ r.nom }}</td>
+                <td>{{ "{:,.0f}".format(r.montant_total) }} FCFA</td>
+                <td class="text-muted">{{ "{:,.0f}".format(r.total_paye) }} FCFA</td>
+                <td style="color:var(--danger);font-weight:600;">{{ "{:,.0f}".format(r.solde) }} FCFA</td>
+                <td>
+                    <a href="{{ url_for('paiement_form') }}?id_reservation={{ r.id_reservation }}"
+                       class="btn btn-primary btn-sm">💳 Payer</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">✅ Aucun solde impayé.</p>
+    {% endif %}
+</div>
+{% endblock %}

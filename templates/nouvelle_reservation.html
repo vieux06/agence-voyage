@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle réservation{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Nouvelle réservation</h2>
+        <p>Remplissez le formulaire — les règles de gestion sont vérifiées automatiquement</p>
+    </div>
+    <a href="{{ url_for('reservations') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<div class="card" style="max-width:700px;">
+    <form method="POST">
+        <div class="form-grid">
+
+            <div class="form-group full">
+                <label>Départ souhaité *</label>
+                <select name="id_depart" required>
+                    <option value="">— Choisir un départ —</option>
+                    {% for d in departs %}
+                    <option value="{{ d.id_depart }}" {% if request.args.get('id_depart') == d.id_depart|string %}selected{% endif %}>
+                        {{ d.date_depart.strftime('%d/%m/%Y') }} — {{ d.libelle }} ({{ d.ville }}) · {{ d.nb_places_restantes }} place(s) · {{ "{:,.0f}".format(d.prix_par_personne) }} FCFA/pers.
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group full">
+                <label>Client *</label>
+                <select name="num_client" required>
+                    <option value="">— Choisir un client —</option>
+                    {% for c in clients %}
+                    <option value="{{ c.num_client }}">{{ c.prenom }} {{ c.nom }} — {{ c.email }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color:var(--muted);font-size:0.75rem;">Client absent ? <a href="{{ url_for('nouveau_client') }}" style="color:var(--gold);">Ajouter un client</a></small>
+            </div>
+
+            <div class="form-group">
+                <label>Guide attitré *</label>
+                <select name="num_guide" required>
+                    <option value="">— Choisir un guide —</option>
+                    {% for g in guides %}
+                    <option value="{{ g.num_guide }}">{{ g.prenom }} {{ g.nom }} ({{ g.langues_parlees }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Nombre de personnes *</label>
+                <input type="number" name="nb_personnes" min="1" max="30" value="1" required>
+            </div>
+
+        </div>
+
+        <div style="margin-top:16px;padding:14px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.2);border-radius:8px;font-size:0.825rem;color:var(--muted);">
+            💡 <strong style="color:var(--gold);">Règles appliquées automatiquement :</strong><br>
+            · Les places disponibles sont vérifiées avant l'enregistrement<br>
+            · Un acompte de <strong>30%</strong> du montant total sera affiché après la réservation<br>
+            · Le départ passe automatiquement en "Complet" si toutes les places sont prises
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;">
+            <button type="submit" class="btn btn-primary">✅ Confirmer la réservation</button>
+            <a href="{{ url_for('reservations') }}" class="btn btn-ghost">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

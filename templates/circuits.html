@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Circuits — Agence de Voyage{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Catalogue des circuits</h2>
+        <p>Tous les circuits disponibles en Afrique de l'Ouest</p>
+    </div>
+    <a href="{{ url_for('nouvelle_reservation') }}" class="btn btn-primary">➕ Nouvelle réservation</a>
+</div>
+
+<div class="grid-3">
+{% for c in circuits %}
+<div class="card" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <span style="font-size:0.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;font-weight:600;">{{ c.code_circuit }}</span>
+        {% if c.departs_ouverts > 0 %}
+            <span class="badge badge-success">{{ c.departs_ouverts }} départ(s)</span>
+        {% else %}
+            <span class="badge badge-muted">Aucun départ</span>
+        {% endif %}
+    </div>
+
+    <div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--text);margin-bottom:4px;">{{ c.libelle }}</div>
+        <div style="color:var(--muted);font-size:0.8rem;">📍 {{ c.ville }}, {{ c.pays }}</div>
+    </div>
+
+    <div style="display:flex;gap:16px;font-size:0.8rem;color:var(--muted);">
+        <span>🗓️ {{ c.duree }} jours</span>
+        <span>👥 Max {{ c.nb_places_max }} pers.</span>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <div style="font-size:0.7rem;color:var(--muted);">Prix par personne</div>
+            <div style="font-size:1.1rem;font-weight:600;color:var(--gold);">{{ "{:,.0f}".format(c.prix_par_personne) }} FCFA</div>
+        </div>
+        <a href="{{ url_for('departs_circuit', code=c.code_circuit) }}" class="btn btn-ghost btn-sm">Voir départs →</a>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

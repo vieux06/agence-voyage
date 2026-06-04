@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Réservation #{{ resa.id_reservation }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Réservation #{{ resa.id_reservation }}</h2>
+        <p>Détail et historique des paiements</p>
+    </div>
+    <a href="{{ url_for('reservations') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title">📋 Détails de la réservation</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:0.875rem;">
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Client</span>
+                <span>{{ resa.prenom }} {{ resa.nom }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Circuit</span>
+                <span>{{ resa.circuit }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Date de départ</span>
+                <span>{{ resa.date_depart.strftime('%d/%m/%Y') }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Guide</span>
+                <span>{{ resa.guide_prenom }} {{ resa.guide_nom }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Nombre de personnes</span>
+                <span>{{ resa.nb_personnes }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Prix/personne</span>
+                <span>{{ "{:,.0f}".format(resa.prix_par_personne) }} FCFA</span>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;">
+                <span class="text-muted">Montant total</span>
+                <span style="font-weight:600;color:var(--gold);">{{ "{:,.0f}".format(resa.montant_total) }} FCFA</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Statut</span>
+                <span>
+                    {% if resa.statut_reservation == 'confirmee' %}<span class="badge badge-success">Confirmée</span>
+                    {% elif resa.statut_reservation == 'en_attente' %}<span class="badge badge-warning">En attente</span>
+                    {% else %}<span class="badge badge-muted">Annulée</span>{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">💰 Paiements reçus</div>
+        {% if paiements %}
+        {% for p in paiements %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div>
+                <div style="font-size:0.825rem;">{{ p.date_paiement.strftime('%d/%m/%Y') }}</div>
+                <div style="font-size:0.75rem;color:var(--muted);">{{ p.mode_paiement }}</div>
+            </div>
+            <span style="color:var(--success);font-weight:600;">+{{ "{:,.0f}".format(p.montant) }} FCFA</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted">Aucun paiement enregistré.</p>
+        {% endif %}
+
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span class="text-muted">Total payé</span>
+                <span style="color:var(--success);font-weight:600;">{{ "{:,.0f}".format(total_paye) }} FCFA</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span class="text-muted">Solde restant</span>
+                <span style="color:{% if solde <= 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:700;font-size:1.1rem;">
+                    {% if solde <= 0 %}✅ Soldé{% else %}{{ "{:,.0f}".format(solde) }} FCFA{% endif %}
+                </span>
+            </div>
+        </div>
+
+        {% if solde > 0 %}
+        <a href="{{ url_for('paiement_form') }}?id_reservation={{ resa.id_reservation }}" class="btn btn-primary" style="margin-top:14px;width:100%;justify-content:center;">
+            💳 Enregistrer un paiement
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
