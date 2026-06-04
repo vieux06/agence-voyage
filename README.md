@@ -3,7 +3,7 @@
 
 ### Prérequis
 - Python 3.10+
-- MySQL avec la base `agence_voyage` importée (fichier SQL fourni par la Personne B)
+- MySQL avec la base `agence_voyage` importée 
 
 ### Installation
 
